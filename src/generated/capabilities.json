@@ -2736,6 +2736,65 @@
       "output_shape": "{input_version,input_fingerprint,draft_id,draft_version,checked_at,policy_source,policy_version,policy_verified_on,policy_digest,status:complete|partial|unavailable,coverage:[{location,kind,status,reason,final_url}],findings:[{location,evidence,policy_reference,risk,suggestion,time_seconds}]}"
     },
     {
+      "id": "action:ads/classify_search_terms",
+      "namespace": "ads",
+      "action": "classify_search_terms",
+      "description": "Judge a batch of Google Ads search terms for semantic alignment: core-entity match with the triggering keyword (Check 1) and search intent (Check 2).",
+      "mode": "read",
+      "platforms": [
+        "google"
+      ],
+      "requires_review": false,
+      "freshness_kind": "realtime",
+      "see_also": [
+        "action:ads/gaql_search"
+      ],
+      "input_params": [
+        {
+          "name": "business",
+          "type": "string",
+          "required": true,
+          "description": "One or two sentences on what the advertiser sells and to whom, from the brand context.",
+          "example": "Paid invoicing and recurring-billing software for small businesses.",
+          "source": "user"
+        },
+        {
+          "name": "terms",
+          "type": "list",
+          "required": true,
+          "description": "Search terms to judge, up to 400. Each item: search_term (required), keyword (the triggering keyword, strongly recommended), campaign (optional name).",
+          "example": [
+            {
+              "search_term": "invoice software for agencies",
+              "keyword": "invoicing software",
+              "campaign": "Non-brand - Invoicing"
+            }
+          ],
+          "source": "upstream:action:ads/gaql_search"
+        },
+        {
+          "name": "not_sold",
+          "type": "string",
+          "required": false,
+          "description": "Optional: adjacent things the advertiser does NOT sell.",
+          "example": "Accounting services, invoice factoring, printable templates.",
+          "source": "user"
+        },
+        {
+          "name": "own_brand_names",
+          "type": "list",
+          "required": false,
+          "description": "Optional: the advertiser's own brand names (up to 20), so they count as commercial rather than competitor intent.",
+          "example": [
+            "Tallyfin"
+          ],
+          "source": "user"
+        }
+      ],
+      "long_description": "Primary use:\nThe semantic step of audit-search-terms. Pass the search terms you pulled with gaql_search, each with the keyword that triggered it, plus one line on what the advertiser sells. A decision model answers both checks from references/semantic-alignment.md for every term in one call, instead of you judging them one by one.\n\nOutput semantics:\n- check_1 is pass/fail/unclear for 'same product category as the keyword'. fail is decisive on its own (the one-vote veto).\n- check_2 is pass/fail/unclear for intent; intent names the signal (commercial, informational, research_comparison, non_commercial, career, competitor). Only commercial passes.\n- semantic_status is aligned, misaligned or borderline. check_1 fail makes it misaligned whatever check_2 says. Otherwise an unclear check makes the term borderline: Monitor it, never negate it.\n- check_2 fail means the intent differs from a buying one. If the campaign deliberately targets that intent (a competitor, comparison or free-template campaign), it is not a mismatch for that campaign.\n- What to do with a failed check (negate, isolate, Monitor, competitor rules, cold start) is still decided by the skill, not by this action.\n- semantic_status null means the term was not classified (the decision model is unavailable or a call failed): judge that term yourself per semantic-alignment.md.\n\nLimits: at most 400 terms per call; split larger lists. Read-only; no platform call and no customer charge.",
+      "output_shape": "{\"terms\": [{\"search_term\": \"invoice factoring companies\", \"keyword\": \"invoicing software\", \"campaign\": \"Non-brand - Invoicing\", \"semantic_status\": \"misaligned\", \"check_1\": \"fail\", \"check_2\": \"pass\", \"intent\": \"commercial\", \"entity_match\": 0.08, \"intent_confidence\": 0.91}], \"summary\": {\"aligned\": 0, \"misaligned\": 1, \"borderline\": 0, \"unclassified\": 0}, \"decision_model_available\": true, \"thresholds\": {\"check_1_pass_at\": 0.7, \"check_1_fail_at\": 0.3, \"check_2_min_confidence\": 0.8}}"
+    },
+    {
       "id": "action:ads/clear_conversion_group_manual_campaign",
       "namespace": "ads",
       "action": "clear_conversion_group_manual_campaign",

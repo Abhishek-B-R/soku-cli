@@ -3,6 +3,34 @@
   "historyStartsAt": "0.1.0-alpha.15",
   "entries": [
     {
+      "version": "unreleased",
+      "date": null,
+      "notes": [],
+      "commands": {
+        "added": [],
+        "changed": [],
+        "removed": []
+      },
+      "capabilities": {
+        "counts": {
+          "before": 353,
+          "after": 354,
+          "added": 1,
+          "removed": 0,
+          "changed": 0
+        },
+        "added": [
+          {
+            "id": "ads/classify_search_terms",
+            "mode": "read",
+            "description": "Judge a batch of Google Ads search terms for semantic alignment: core-entity match with the triggering keyword (Check 1) and search intent (Check 2)."
+          }
+        ],
+        "removed": [],
+        "changed": []
+      }
+    },
+    {
       "version": "0.1.0-alpha.23",
       "date": "2026-09-25",
       "notes": [
