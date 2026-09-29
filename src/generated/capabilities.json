@@ -21974,6 +21974,54 @@
       "output_shape": "{observed_at, resource?, configuration_verified?, report?, can_manage?}"
     },
     {
+      "id": "action:ga4/get_ads_cross_check",
+      "namespace": "ga4",
+      "action": "get_ads_cross_check",
+      "description": "Compare ad-platform spend and conversions with GA4 traffic, goal events and revenue for the brand; returns per-platform and matched-campaign rows, withheld ratios with reasons, and tracking diagnostics.",
+      "mode": "read",
+      "platforms": [
+        "ga4"
+      ],
+      "requires_review": false,
+      "freshness_kind": "synced",
+      "see_also": [
+        "action:ga4/list_traffic_sources",
+        "action:ga4/list_events"
+      ],
+      "input_params": [
+        {
+          "name": "date_start",
+          "type": "string",
+          "required": true,
+          "description": "Inclusive start date in YYYY-MM-DD format.",
+          "example": "2026-09-01"
+        },
+        {
+          "name": "date_end",
+          "type": "string",
+          "required": true,
+          "description": "Inclusive end date in YYYY-MM-DD format; at most 366 days.",
+          "example": "2026-09-27"
+        },
+        {
+          "name": "property_id",
+          "type": "string",
+          "required": false,
+          "description": "GA4 property to compare against. Required only when the brand has several; take it from property_options[].property_id.",
+          "source": "upstream:action:ga4/get_ads_cross_check"
+        },
+        {
+          "name": "goal_group_id",
+          "type": "integer",
+          "required": false,
+          "description": "Conversion Group used as the business goal, from goal_options[].group_id. Defaults to the first group with GA4 events bound.",
+          "source": "upstream:action:ga4/get_ads_cross_check"
+        }
+      ],
+      "long_description": "Primary use:\nGive a second opinion on each ad platform's self-reported results: what the platform attributes to itself next to what an independent source (GA4) attributes to the same platform, using the same computation as the Dashboard's Second Opinion tab. Each side attributes in its own way: never add the two sides' conversions together, never call a platform number inflated because GA4 is lower, and do not treat GA4 as ground truth.\n\nUse when:\n- The user asks why ad-platform conversions or ROAS differ from GA4.\n- The user asks whether ad tracking (UTMs, GA4 tag, Google Ads link) works.\n- You need GA4-side CPA/ROAS per platform or per campaign.\n\nDo not use when:\n- The user only needs ad-platform metrics. Use the ads report actions.\n- The user only needs GA4 traffic. Use list_traffic_sources.\n\nWorkflow:\n1. Call this action with date_start and date_end.\n2. status=needs_property: repeat with property_id from property_options. status=ga4_pending: every requested day is still inside GA4's processing lag; say so and suggest a range that ends a few days earlier.\n3. goal is null or goal.status is not ok: explain goal_options and that the customer confirms a goal and its GA4 events in the Dashboard; do not pick GA4 events yourself.\n\nOutput semantics:\n- null means unknown (not synced, not measurable); 0 is a measured zero.\n- ratios.*.withheld names why a CPA/ROAS is not computed (coverage gap, mixed or mismatched currency, no goal, no revenue tracking).\n- window may end before the requested end: GA4 finalizes data 24–48h late and both sides are cut to the same days.\n- campaigns only lists campaigns matched by exact id; unmatched[] says how much spend and traffic the campaign table does not cover.\n- findings[] keep facts, causes (unproven) and actions apart; cite evidence.sources and the window when explaining one.\n- definitions[] explains every metric's source and meaning.",
+      "output_shape": "{\"status\": \"ready|needs_property|no_ga4|no_ads|ga4_pending\", \"window\": {\"start\": \"...\", \"end\": \"...\"}, \"property\": {\"property_id\": \"...\", \"currency\": \"USD\", \"coverage\": {\"status\": \"complete|partial|missing\", \"missing\": []}}, \"goal\": {\"slug\": \"...\", \"ga4_event_names\": [], \"status\": \"ok|not_bound|not_observed|unavailable|truncated\"}, \"channels\": [{\"platform\": \"meta\", \"availability\": \"goal|traffic|unavailable\", \"ads\": {\"spend\": 0, \"goal_conversions\": 0, \"currency\": \"USD\"}, \"ga4\": {\"sessions\": 0, \"goal_events\": 0, \"revenue\": 0}, \"ratios\": {\"ga4_cpa\": {\"value\": null, \"withheld\": \"...\"}}}], \"campaigns\": [...], \"unmatched\": [...], \"findings\": [{\"code\": \"...\", \"summary\": \"...\", \"facts\": {}, \"causes\": [], \"actions\": [], \"evidence\": {\"sources\": [], \"start\": \"...\", \"end\": \"...\"}}], \"definitions\": [...]}"
+    },
+    {
       "id": "action:ga4/get_configuration",
       "namespace": "ga4",
       "action": "get_configuration",

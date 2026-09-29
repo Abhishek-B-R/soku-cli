@@ -14,8 +14,8 @@
       "capabilities": {
         "counts": {
           "before": 353,
-          "after": 354,
-          "added": 1,
+          "after": 355,
+          "added": 2,
           "removed": 0,
           "changed": 0
         },
@@ -24,6 +24,11 @@
             "id": "ads/classify_search_terms",
             "mode": "read",
             "description": "Judge a batch of Google Ads search terms for semantic alignment: core-entity match with the triggering keyword (Check 1) and search intent (Check 2)."
+          },
+          {
+            "id": "ga4/get_ads_cross_check",
+            "mode": "read",
+            "description": "Compare ad-platform spend and conversions with GA4 traffic, goal events and revenue for the brand; returns per-platform and matched-campaign rows, withheld ratios with reasons, and tracking diagnostics."
           }
         ],
         "removed": [],
