@@ -281,6 +281,12 @@ export function buildGeneratedCommands(
   })
 
   for (const spec of actions) {
+    // Review-gated actions get `--summary` below, which already fills the
+    // wire `_summary` field. Some manifests also list `_summary` as a param;
+    // rendering it too would add a second, mandatory `---summary` flag.
+    const inputParams = spec.requires_review
+      ? spec.input_params.filter((param) => param.name !== '_summary')
+      : spec.input_params
     const cmd = groupFor(spec.namespace).command(toKebab(spec.action))
     cmd.description(
       [modeBadge(spec), spec.description, spec.long_description, actionHelpSuffix(spec)]
@@ -288,7 +294,7 @@ export function buildGeneratedCommands(
         .join('\n\n'),
     )
 
-    for (const param of spec.input_params) {
+    for (const param of inputParams) {
       const flag = `--${toKebab(param.name)}`
       const desc = [
         param.description || param.name,
@@ -336,7 +342,7 @@ export function buildGeneratedCommands(
       if (platform !== undefined && spec.platforms.length && !spec.platforms.includes(platform)) {
         cmd.error(`--platform must be one of: ${spec.platforms.join(', ')}.`, { exitCode: ExitCode.USAGE })
       }
-      for (const param of spec.input_params) {
+      for (const param of inputParams) {
         const value = options[toCamel(param.name)]
         const scoped = Boolean(param.platform?.length || param.required_platforms?.length)
         if (!scoped) continue
@@ -358,7 +364,7 @@ export function buildGeneratedCommands(
 
     cmd.action(async (opts: Record<string, unknown>) => {
       const payload: Record<string, unknown> = {}
-      for (const param of spec.input_params) {
+      for (const param of inputParams) {
         const value = opts[toCamel(param.name)]
         if (value !== undefined) payload[param.name] = value
       }

@@ -345,6 +345,21 @@ test('required boolean accepts explicit false and rejects omission', async () =>
   assert.equal(value, false)
 })
 
+test('a manifest _summary param is served by --summary, not a second ---summary flag', async () => {
+  const manifest: CapabilityManifest = { actions: [{ ...fixture.actions[0], mode: 'write', requires_review: true, input_params: [
+    { name: 'target', type: 'string', required: true, description: 'Rule coordinate.' },
+    { name: '_summary', type: 'string', required: true, description: 'Review card sentence.' },
+  ] }] }
+  const program = new Command().exitOverride().configureOutput({ writeErr: () => {} })
+  buildGeneratedCommands(program, manifest)
+  const command = sub(group(program, 'ads'), 'list-ad-accounts')
+  assert.deepEqual(command.options.filter((option) => /summary/.test(option.long ?? '')).map((option) => option.long), ['--summary'])
+  let parsed: Record<string, unknown> | undefined
+  command.action((opts) => { parsed = opts })
+  await program.parseAsync(['ads', 'list-ad-accounts', '--target', 'ads/create_ad.name', '--summary', 'Remove the rule'], { from: 'user' })
+  assert.equal(parsed?.summary, 'Remove the rule')
+})
+
 test('latest manifest exposes campaign tracking and new integration opt-outs', () => {
   const manifest = JSON.parse(readFileSync('src/generated/capabilities.json', 'utf8')) as CapabilityManifest
   const program = new Command()
