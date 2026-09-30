@@ -1,4 +1,6 @@
-/** `soku call <namespace> <action> [--payload '<json>' | -p key=value ...]` */
+/** `soku call <namespace> <action> [--payload '<json>' | --payload @file | -p key=value ...]` */
+
+import { readFileSync } from 'node:fs'
 
 import { Command } from 'commander'
 
@@ -10,7 +12,7 @@ export function registerCallCommand(program: Command): void {
   program
     .command('call <namespace> <action>')
     .description('Invoke a data capability')
-    .option('--payload <json>', 'Full JSON payload')
+    .option('--payload <json>', 'Full JSON payload, or @path to a JSON file (@- reads stdin)')
     .option(
       '-p, --param <key=value>',
       'Set one payload field (repeatable); values are parsed as JSON when possible',
@@ -29,8 +31,9 @@ export function registerCallCommand(program: Command): void {
       ) => {
         let payload: Record<string, unknown> = {}
         if (opts.payload) {
+          const raw = readPayload(opts.payload)
           try {
-            payload = JSON.parse(opts.payload) as Record<string, unknown>
+            payload = JSON.parse(raw) as Record<string, unknown>
           } catch {
             emitError('usage', '--payload must be valid JSON.', ExitCode.USAGE)
           }
@@ -50,6 +53,23 @@ export function registerCallCommand(program: Command): void {
         emitActionResult(result, action)
       },
     )
+}
+
+/** Inline JSON, or `@path` / `@-` for payloads too large for argv (e.g.
+ * base64 images, which hit the shell's argument list limit). A JSON value
+ * never starts with `@`, so there is no ambiguity with inline payloads. */
+function readPayload(value: string): string {
+  if (!value.startsWith('@')) return value
+  const source = value.slice(1)
+  try {
+    return readFileSync(source === '-' ? 0 : source, 'utf8')
+  } catch (err) {
+    return emitError(
+      'usage',
+      `Could not read --payload file ${source}: ${(err as Error).message}`,
+      ExitCode.USAGE,
+    )
+  }
 }
 
 function collectParam(entry: string, acc: Record<string, unknown>): Record<string, unknown> {

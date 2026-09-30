@@ -141,6 +141,9 @@ soku call posthog query --payload '{"project_id":"12345","tool":"execute-sql","a
 
 Review-gated writes through `soku call` require `--summary`.
 
+For a large payload, write it to a file and pass `--payload @payload.json`
+(or `--payload @-` to read stdin) instead of inlining it in the command line.
+
 ## Recently Added Integrations And Parameters
 
 Discover the current command tree with `soku --help`. Recent data namespaces
