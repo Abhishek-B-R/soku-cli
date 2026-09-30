@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { ApiError, apiRequest } from './client.js'
@@ -97,5 +100,24 @@ test('non-JSON body keeps the HTTP status fallback', async () => {
     globalThis.fetch = originalFetch
     if (originalToken === undefined) delete process.env.SOKU_TOKEN
     else process.env.SOKU_TOKEN = originalToken
+  }
+})
+
+test('a 401 on SOKU_TOKEN points at the env var, not at auth login', async () => {
+  const originalHome = process.env.HOME
+  const originalNoKeychain = process.env.SOKU_NO_KEYCHAIN
+  const home = mkdtempSync(join(tmpdir(), 'soku-client-'))
+  process.env.HOME = home
+  process.env.SOKU_NO_KEYCHAIN = '1'
+  try {
+    const err = await errorFor(401, { error: 'invalid_token' })
+    assert.equal(err.type, 'unauthorized')
+    assert.match(err.hint ?? '', /SOKU_TOKEN/)
+  } finally {
+    if (originalHome === undefined) delete process.env.HOME
+    else process.env.HOME = originalHome
+    if (originalNoKeychain === undefined) delete process.env.SOKU_NO_KEYCHAIN
+    else process.env.SOKU_NO_KEYCHAIN = originalNoKeychain
+    rmSync(home, { recursive: true, force: true })
   }
 })

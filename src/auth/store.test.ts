@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, test } from 'node:test'
 
-import { clearToken, loadToken, saveToken } from './store.js'
+import { clearToken, forgetRejectedToken, loadToken, saveToken } from './store.js'
 
 let home: string
 const origHome = process.env.HOME
@@ -57,4 +57,20 @@ test('clearToken removes the stored token', async () => {
 
 test('loadToken returns null when nothing stored', async () => {
   assert.equal(await loadToken(), null)
+})
+
+test('a rejected token clears the stored session it came from', async () => {
+  await saveToken('stale-session')
+  await forgetRejectedToken()
+  assert.equal(await loadToken(), null)
+})
+
+test('a rejected SOKU_TOKEN leaves the stored session alone', async () => {
+  // The env token only shadows the stored login. A bad CI key must not sign
+  // the user out of the session they created with `soku auth login`.
+  await saveToken('good-session')
+  process.env.SOKU_TOKEN = 'revoked-key'
+  await forgetRejectedToken()
+  delete process.env.SOKU_TOKEN
+  assert.equal(await loadToken(), 'good-session')
 })

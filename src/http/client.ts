@@ -1,7 +1,7 @@
 /** Thin fetch wrapper that injects the bearer token + active workspace headers,
  * and translates the server's auth errors into the CLI's exit-code contract. */
 
-import { clearToken, loadToken } from '../auth/store.js'
+import { envToken, forgetRejectedToken, loadToken } from '../auth/store.js'
 import { loadConfig, resolveApiBaseUrl } from '../config.js'
 import { emitError, ExitCode, type ExitCodeValue } from '../output/envelope.js'
 
@@ -109,13 +109,16 @@ export async function apiRequest<T = unknown>(path: string, opts: RequestOptions
     // key, or rotated signing key). Drop it so the next run re-authenticates
     // cleanly instead of looping on a dead credential.
     const code = (parsed as { error?: string } | null)?.error ?? 'unauthorized'
-    await clearToken()
+    const fromEnv = envToken() !== null
+    await forgetRejectedToken()
     return fail(
       'unauthorized',
       `Authentication failed (${code}).`,
       res.status,
       ExitCode.AUTH,
-      'Run `soku auth login`.',
+      fromEnv
+        ? 'SOKU_TOKEN was rejected. Set a valid token, or unset it to use your `soku auth login` session.'
+        : 'Run `soku auth login`.',
     )
   }
   if (res.status === 403) {

@@ -59,8 +59,13 @@ export async function saveToken(token: string): Promise<void> {
   writeFileSync(path, JSON.stringify({ token }), { mode: 0o600 })
 }
 
+/** The SOKU_TOKEN override, when set. It wins over any stored session. */
+export function envToken(): string | null {
+  return process.env.SOKU_TOKEN?.trim() || null
+}
+
 export async function loadToken(): Promise<string | null> {
-  const fromEnv = process.env.SOKU_TOKEN?.trim()
+  const fromEnv = envToken()
   if (fromEnv) return fromEnv
 
   const keytar = await loadKeytar()
@@ -94,4 +99,13 @@ export async function clearToken(): Promise<void> {
   } catch {
     // ignore
   }
+}
+
+/** Drop the stored session after the server rejected the token we sent.
+ *
+ * When SOKU_TOKEN is set, that is the token the server rejected; the stored
+ * session was never sent and may be perfectly valid, so it is kept. */
+export async function forgetRejectedToken(): Promise<void> {
+  if (envToken()) return
+  await clearToken()
 }

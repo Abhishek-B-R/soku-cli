@@ -16,7 +16,7 @@ import { pipeline } from 'node:stream/promises'
 
 import { Command, InvalidArgumentError } from 'commander'
 
-import { clearToken, loadToken } from '../auth/store.js'
+import { forgetRejectedToken, loadToken } from '../auth/store.js'
 import { loadConfig, resolveApiBaseUrl } from '../config.js'
 import { apiRequest } from '../http/client.js'
 import { cyan, dim, emitError, emitSuccess, ExitCode, table } from '../output/envelope.js'
@@ -387,7 +387,7 @@ async function runEgress(parsed: ParsedCurl): Promise<void> {
   // Success always carries the upstream marker; anything else is a Soku-level
   // failure (auth/workspace dependency error, or an _egress_error envelope).
   if (res.headers.get('x-soku-egress') !== 'upstream') {
-    if (res.status === 401) await clearToken()
+    if (res.status === 401) await forgetRejectedToken()
     const parsedBody = (await res.json().catch(() => null)) as Record<string, unknown> | null
     const errObj =
       (parsedBody?.error as Record<string, unknown> | undefined) ??
