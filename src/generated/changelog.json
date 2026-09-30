@@ -17,7 +17,7 @@
           "after": 355,
           "added": 2,
           "removed": 0,
-          "changed": 0
+          "changed": 2
         },
         "added": [
           {
@@ -32,7 +32,21 @@
           }
         ],
         "removed": [],
-        "changed": []
+        "changed": [
+          {
+            "id": "ads/audit_ad_automation_inventory",
+            "fields": [
+              "long_description",
+              "output_shape"
+            ]
+          },
+          {
+            "id": "ads/enable_ad_automation_audits",
+            "fields": [
+              "long_description"
+            ]
+          }
+        ]
       }
     },
     {
